@@ -147,7 +147,7 @@ export default function Dashboard() {
                         : "bg-[#deff9a] text-black hover:scale-105 active:scale-95"
                     }`}
                   >
-                    {isFull ? "Full" : "Book"}
+                    {isFull ? "Full" : "Buchen"}
                   </button>
                 )}
               </div>
