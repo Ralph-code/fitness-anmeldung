@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // keine speziellen redirects hier
+    output: 'standalone',
 }
 module.exports = nextConfig
