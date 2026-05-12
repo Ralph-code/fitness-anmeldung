@@ -1,32 +1,29 @@
-import { AuthProvider } from "@/context/AuthContext"; // Pfad anpassen falls nötig
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/context/AuthContext";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+// Konfiguration der modernen Inter-Schriftart
+const inter = Inter({ subsets: ["latin"] });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata = {
-  title: "Fitness Slot Buchung",
-  description: "Buche deinen Slot für das Gym",
+export const metadata: Metadata = {
+  title: "Fitness Heim | Anmeldung",
+  description: "Modernes Buchungssystem für das Fitness Heim",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html
-      lang="de">
-      <body>
+    <html lang="de" className="bg-black">
+      <body className={`${inter.className} antialiased bg-black text-white`}>
+        {/* 
+            Der AuthProvider umschließt die gesamte App. 
+            Dadurch können alle Komponenten (wie dein Dashboard) 
+            auf den eingeloggten User zugreifen.
+        */}
         <AuthProvider>
           {children}
         </AuthProvider>
@@ -34,4 +31,3 @@ export default function RootLayout({
     </html>
   );
 }
-

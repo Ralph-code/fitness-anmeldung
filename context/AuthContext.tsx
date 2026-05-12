@@ -1,72 +1,61 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged, User as FirebaseUser } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, onSnapshot } from "firebase/firestore";
 
-// 1. Definiere genau, wie unser User-Objekt in der App aussieht
-interface AuthUser {
+interface UserType {
   uid: string;
   email: string | null;
-  username: string | null;
-  isAdmin: boolean;
+  username?: string;
+  isAdmin?: boolean;
+  birthYear?: number;
 }
 
-// 2. Definiere die Struktur des Contexts
 interface AuthContextType {
-  user: AuthUser | null;
+  user: UserType | null;
   loading: boolean;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  loading: true,
-});
+const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<UserType | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Überwache den Login-Status von Firebase
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
-        try {
-          // Suche die Rolle und den Usernamen im Firestore
-          const userDocRef = doc(db, "users", firebaseUser.uid);
-          const userDocSnap = await getDoc(userDocRef);
-
-          if (userDocSnap.exists()) {
-            const userData = userDocSnap.data();
-            
-            // Setze unseren erweiterten User mit Daten aus Firestore
+        // Echtzeit-Listener für Profildaten
+        const userRef = doc(db, "users", firebaseUser.uid);
+        const unsubscribeDoc = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
             setUser({
               uid: firebaseUser.uid,
               email: firebaseUser.email,
-              username: userData.username || null,
-              isAdmin: userData.role === "admin", // Hier wird isAdmin definiert
+              username: data.username || firebaseUser.email?.split("@")[0],
+              isAdmin: data.isAdmin === true || data.role === "admin",
+              birthYear: data.birthYear || 0, // 0 als Fallback, falls nichts eingetragen ist
             });
           } else {
-            // Falls kein Firestore-Dokument existiert (Sicherheits-Fallback)
-            setUser({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              username: null,
-              isAdmin: false,
-            });
+            setUser({ uid: firebaseUser.uid, email: firebaseUser.email, birthYear: 0 });
           }
-        } catch (error) {
-          console.error("Fehler beim Abrufen der User-Rolle:", error);
-          setUser(null);
-        }
+          setLoading(false);
+        }, (error) => {
+          console.warn("AuthDoc-Sperre:", error.message);
+          setLoading(false);
+        });
+
+        return () => unsubscribeDoc();
       } else {
         setUser(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeAuth();
   }, []);
 
   return (
@@ -76,5 +65,4 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-// Hook, um den Auth-Status einfach in jeder Komponente zu nutzen
 export const useAuth = () => useContext(AuthContext);

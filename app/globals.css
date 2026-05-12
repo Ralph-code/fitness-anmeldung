@@ -1,26 +1,92 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 0, 0, 0;
+  --background-end-rgb: 0, 0, 0;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: rgb(var(--foreground-rgb));
+  background: rgb(var(--background-start-rgb));
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+
+/* --- BASIS ANIMATIONEN --- */
+
+@keyframes slow-spin {
+  from { transform: rotate(0deg) scale(.5); }
+  50% { transform: rotate(180deg) scale(.5); }
+  to { transform: rotate(360deg) scale(.5); }
+}
+
+@keyframes soft-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(0.98); }
+}
+
+@keyframes red-glow-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+@keyframes shine-forward {
+  0% { transform: translateX(-150%) skewX(-20deg); }
+  100% { transform: translateX(150%) skewX(-20deg); }
+}
+
+@keyframes shine-reverse {
+  0% { transform: translateX(150%) skewX(-20deg); }
+  100% { transform: translateX(-150%) skewX(-20deg); }
+}
+
+/* --- SHINE KLASSEN --- */
+
+/* Normaler Shine: Links -> Rechts */
+.shine-effect {
+  position: relative;
+  overflow: hidden;
+}
+.shine-effect::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transform: translateX(-150%) skewX(-20deg);
+  animation: shine-forward 0.8s ease-out forwards;
+}
+
+/* Reverse Shine: Rechts -> Links */
+.shine-reverse-effect {
+  position: relative;
+  overflow: hidden;
+}
+.shine-reverse-effect::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(-90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transform: translateX(150%) skewX(-20deg);
+  animation: shine-reverse 0.8s ease-out forwards;
+}
+
+/* --- UTILITY ANIMATIONS --- */
+
+.animate-slow-spin { animation: slow-spin 20s linear infinite; }
+.animate-soft-pulse { animation: soft-pulse 2s infinite ease-in-out; }
+.animate-red-glow { animation: red-glow-pulse 4s infinite ease-in-out; }
+
+.animate-in { animation-duration: 0.3s; animation-fill-mode: forwards; }
+.fade-in { animation-name: fadeIn; }
+.zoom-in-95 { animation-name: zoomIn; }
+.slide-in-from-bottom-5 { animation-name: slideInBottom; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes zoomIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes slideInBottom { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+@media (hover: none) {
+  .active\:scale-95:active { transform: scale(0.95); }
+  .active\:scale-90:active { transform: scale(0.9); }
 }

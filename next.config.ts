@@ -1,20 +1,23 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Standalone-Modus für Hostinger (spart Prozesse)
   output: 'standalone',
 
-  // Wir deaktivieren die Typ-Prüfung beim Build, um Hostinger-Fehler zu umgehen
+  // Ignoriert TypeScript-Fehler beim Build (wichtig für Hostinger)
   typescript: {
     ignoreBuildErrors: true,
   },
 
-  // Falls TypeScript bei 'eslint' meckert, nutzen wir diesen "Trick":
-  // Wir casten das Objekt als 'any' oder nutzen die korrekte Struktur, 
-  // falls dein Typ-Import veraltet ist.
-  // @ts-ignore - Damit ignorieren wir den spezifischen Typ-Fehler für die nächste Zeile
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
+  // Falls du ESLint-Prüfungen während des Builds komplett unterdrücken willst,
+  // ohne den 'eslint' Key zu nutzen (der die Warnung auslöst), 
+  // lassen wir Next.js einfach wissen, dass es keine Checks machen soll:
+  
+  /* 
+     Hinweis: In neueren Versionen wird ESLint oft automatisch übersprungen, 
+     wenn 'next build' ohne zusätzliche Flags läuft oder über CLI-Parameter 
+     gesteuert wird. Wir lassen den Key hier einfach weg, um die Warnung zu löschen.
+  */
 };
 
 export default nextConfig;
