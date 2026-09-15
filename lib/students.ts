@@ -1,5 +1,6 @@
 import { randomInt } from "node:crypto";
 import { adminAuth, adminDb } from "@/lib/firebaseAdmin";
+import { deleteUpcomingBookings } from "@/lib/bookingsServer";
 import { HttpError } from "@/lib/serverAuth";
 import { isValidRoom, normalizeRoom, parseBirthDate, toUsername, usernameToEmail } from "@/lib/schedule";
 import { isAdminProfile, type UserProfile } from "@/lib/types";
@@ -74,6 +75,7 @@ export async function createStudent(input: StudentInput, taken: Set<string>) {
     ...input,
     username,
     isAdmin: false,
+    approved: false,
     suspendedUntil: null,
     suspendReason: null,
     createdAt: new Date().toISOString(),
@@ -82,6 +84,33 @@ export async function createStudent(input: StudentInput, taken: Set<string>) {
   await batch.commit();
 
   return { uid, username, password, ...input };
+}
+
+/** Löscht Studenten komplett: offene Buchungen, Login, Profil und Zugangsdaten. Admins werden übersprungen. */
+export async function deleteStudents(uids: string[]) {
+  const db = adminDb();
+  const snaps = uids.length ? await db.getAll(...uids.map((uid) => db.doc(`users/${uid}`))) : [];
+  const targets = snaps.filter((s) => s.exists && !isAdminProfile(s.data())).map((s) => s.id);
+  if (targets.length === 0) return { deleted: 0, failed: 0 };
+
+  await deleteUpcomingBookings({ uids: targets });
+
+  const failed = new Set<number>();
+  for (let i = 0; i < targets.length; i += 1000) {
+    const res = await adminAuth().deleteUsers(targets.slice(i, i + 1000));
+    res.errors.forEach((e) => failed.add(i + e.index));
+  }
+
+  const deleted = targets.filter((_, i) => !failed.has(i));
+  for (let i = 0; i < deleted.length; i += 200) {
+    const batch = db.batch();
+    for (const uid of deleted.slice(i, i + 200)) {
+      batch.delete(db.doc(`users/${uid}`));
+      batch.delete(db.doc(`credentials/${uid}`));
+    }
+    await batch.commit();
+  }
+  return { deleted: deleted.length, failed: failed.size };
 }
 
 export async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>) {

@@ -45,6 +45,7 @@ export async function createBooking(uid: string, slotId: string | undefined) {
       throw new HttpError(403, `Gesperrt bis ${formatDate(profile.suspendedUntil!, { day: "2-digit", month: "2-digit" })}`);
     }
     if (!isOldEnough(profile, slot, date)) throw new HttpError(403, `Erst ab ${slot.minAge} Jahren`);
+    if (slot.requiresApproval && !profile.approved) throw new HttpError(403, "Nur mit Bestätigung");
     if (bookingSnap.exists) throw new HttpError(409, "Heute schon gebucht");
 
     const bookings = daySnap.docs.map((d) => d.data());
@@ -92,11 +93,11 @@ export async function deleteBooking(
 }
 
 /**
- * Entfernt noch nicht begonnene Buchungen – eines Studenten (optional bis zu einem Datum)
- * oder aller Studenten in bestimmten Slots. `schedule` = Zeitplan, zu dem die Buchungen gehören.
+ * Entfernt noch nicht begonnene Buchungen – eines Studenten (optional bis zu einem Datum / in bestimmten
+ * Slots), mehrerer Studenten oder aller in bestimmten Slots. `schedule` = Zeitplan der Buchungen.
  */
 export async function deleteUpcomingBookings(
-  filter: { uid?: string; untilDate?: string; slotIds?: string[] },
+  filter: { uid?: string; uids?: string[]; untilDate?: string; slotIds?: string[] },
   schedule?: Schedule
 ) {
   schedule ??= await loadSchedule();
@@ -109,6 +110,7 @@ export async function deleteUpcomingBookings(
     const b = doc.data();
     const id = slotIdOf(schedule, b);
     const slot = slotById(schedule, id);
+    if (filter.uids && !filter.uids.includes(b.uid)) continue;
     if (filter.slotIds && !(id && filter.slotIds.includes(id))) continue;
     if (filter.untilDate && b.date > filter.untilDate) continue;
     if (b.date < w.today || (slot && hasSlotStarted(w, b.date, slot))) continue;

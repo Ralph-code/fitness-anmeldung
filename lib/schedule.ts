@@ -6,6 +6,7 @@ export const TIME_ZONE = "Europe/Rome";
 export const LOGIN_EMAIL_DOMAIN = "fitness.local";
 export const MAX_SLOTS = 24;
 export const MAX_SLOT_CAPACITY = 50;
+export const ADULT_AGE = 16;
 
 export type Slot = {
   id: string;
@@ -13,7 +14,10 @@ export type Slot = {
   end: string;
   label: string;
   capacity: number;
+  /** 16+: nur für Studenten ab diesem Alter sichtbar und buchbar */
   minAge: number | null;
+  /** Mit Bestätigung: nur für Studenten, die der Admin bestätigt hat */
+  requiresApproval: boolean;
 };
 
 export type SlotConfig = Omit<Slot, "label">;
@@ -28,7 +32,7 @@ export type Schedule = {
 export const toSlot = (c: SlotConfig): Slot => ({ ...c, label: `${c.start}-${c.end}` });
 
 const defaultSlot = (start: string, end: string, minAge: number | null = null) =>
-  toSlot({ id: start.replace(":", ""), start, end, capacity: 6, minAge });
+  toSlot({ id: start.replace(":", ""), start, end, capacity: 6, minAge, requiresApproval: false });
 
 export const DEFAULT_SCHEDULE: Schedule = {
   opensAt: "21:15",
@@ -81,7 +85,7 @@ export function validateSchedule(input: { opensAt?: unknown; slots?: unknown }):
       if (minAge !== null && (!Number.isInteger(minAge) || minAge < 1 || minAge > 99)) {
         throw new Error(`${start}-${end}: Mindestalter ungültig`);
       }
-      return toSlot({ id, start, end, capacity, minAge });
+      return toSlot({ id, start, end, capacity, minAge, requiresApproval: s.requiresApproval === true });
     })
     .sort((a, b) => toMinutes(a.start) - toMinutes(b.start));
 
@@ -187,6 +191,11 @@ export function isOldEnough(profile: AgeFields, s: Slot, date: string) {
   if (!s.minAge) return true;
   const age = ageOn(profile, date);
   return age !== null && age >= s.minAge;
+}
+
+/** Studenten sehen nur Slots, die sie auch buchen dürfen (Alter + Bestätigung) */
+export function canSeeSlot(profile: AgeFields & { approved?: boolean }, s: Slot, date: string) {
+  return isOldEnough(profile, s, date) && (!s.requiresApproval || profile.approved === true);
 }
 
 /** suspendedUntil ist inklusive: gesperrt bis einschließlich diesem Tag */

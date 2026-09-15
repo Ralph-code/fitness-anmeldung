@@ -8,6 +8,8 @@ export interface UserProfile {
   role?: string;
   suspendedUntil?: string | null;
   suspendReason?: string | null;
+  /** Vom Admin bestätigt: darf Slots "Mit Bestätigung" sehen und buchen */
+  approved?: boolean;
 }
 
 export interface Booking {

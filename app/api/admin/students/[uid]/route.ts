@@ -1,7 +1,8 @@
 import { adminAuth, adminDb } from "@/lib/firebaseAdmin";
 import { deleteUpcomingBookings } from "@/lib/bookingsServer";
+import { loadSchedule } from "@/lib/scheduleServer";
 import { HttpError, readJson, requireAdmin, withErrors } from "@/lib/serverAuth";
-import { getStudent, issuePassword, validateStudent } from "@/lib/students";
+import { deleteStudents, getStudent, issuePassword, validateStudent } from "@/lib/students";
 import { zonedNow } from "@/lib/schedule";
 
 type Ctx = { params: Promise<{ uid: string }> };
@@ -13,6 +14,7 @@ type PatchBody =
   | { action: "update"; name?: string; room?: string; birthDate?: string }
   | { action: "suspend"; until?: string; reason?: string }
   | { action: "unsuspend" }
+  | { action: "setApproval"; approved?: boolean }
   | { action: "resetPassword" };
 
 export const PATCH = withErrors<Ctx>(async (req, { params }) => {
@@ -48,6 +50,19 @@ export const PATCH = withErrors<Ctx>(async (req, { params }) => {
       await userRef.update({ suspendedUntil: null, suspendReason: null });
       return Response.json({ ok: true });
 
+    case "setApproval": {
+      const approved = body.approved === true;
+      await userRef.update({ approved });
+      let removed = 0;
+      if (!approved) {
+        // Ohne Bestätigung keine Buchungen mehr in "Mit Bestätigung"-Slots
+        const schedule = await loadSchedule();
+        const slotIds = schedule.slots.filter((s) => s.requiresApproval).map((s) => s.id);
+        if (slotIds.length) removed = await deleteUpcomingBookings({ uid, slotIds }, schedule);
+      }
+      return Response.json({ ok: true, removed });
+    }
+
     case "resetPassword":
       return Response.json({ password: await issuePassword(uid) });
 
@@ -61,13 +76,7 @@ export const DELETE = withErrors<Ctx>(async (req, { params }) => {
   const { uid } = await params;
   await getStudent(uid);
 
-  await deleteUpcomingBookings({ uid });
-  try {
-    await adminAuth().deleteUser(uid);
-  } catch (e) {
-    if ((e as { code?: string }).code !== "auth/user-not-found") throw e;
-  }
-  const db = adminDb();
-  await Promise.all([db.doc(`users/${uid}`).delete(), db.doc(`credentials/${uid}`).delete()]);
+  const { failed } = await deleteStudents([uid]);
+  if (failed) throw new HttpError(500, "Löschen fehlgeschlagen");
   return Response.json({ ok: true });
 });

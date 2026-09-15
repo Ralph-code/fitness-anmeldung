@@ -8,12 +8,13 @@ import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api";
 import { useSchedule } from "@/lib/useSchedule";
 import {
-  addDays, formatDate, getBookingWindow, hasSlotStarted, isOldEnough, slotIdOf, suspendedOn,
+  addDays, canSeeSlot, formatDate, getBookingWindow, hasSlotStarted, slotIdOf, suspendedOn,
   type BookingWindow, type Slot,
 } from "@/lib/schedule";
 import type { Booking } from "@/lib/types";
 import ConfirmModal from "@/components/ConfirmModal";
 import SuspendModal from "@/components/SuspendModal";
+import StatusBadges from "@/components/StatusBadges";
 
 const ADMIN_HISTORY_DAYS = 30;
 
@@ -155,6 +156,8 @@ export default function Dashboard() {
   const isPause = !isAdmin && win.phase === "pause";
   const isSystemLocked = isSuspended || isPause;
   const tomorrow = addDays(win.today, 1);
+  // Studenten sehen nur Slots, die sie buchen dürfen (16+, Mit Bestätigung)
+  const visibleSlots = isAdmin ? schedule.slots : schedule.slots.filter((s) => canSeeSlot(user, s, date));
 
   const targetDateLabel = isAdmin
     ? date === win.today ? "HEUTE" : date === tomorrow ? "MORGEN" : "ARCHIV"
@@ -178,18 +181,23 @@ export default function Dashboard() {
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}
-        <header className="flex justify-between items-center mb-12 pt-4 relative z-50">
+        <header className="flex justify-between items-start gap-4 mb-10 sm:mb-12 pt-4 relative z-50">
           <div className="min-w-0">
-            <h1 className="text-3xl font-black italic tracking-tighter text-[#deff9a]">GYM LOG</h1>
+            <h1 className="text-[1.75rem] sm:text-3xl font-black italic tracking-tighter text-[#deff9a] whitespace-nowrap">GYM LOG</h1>
             <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest mt-1 truncate">
                 {isAdmin ? "Admin-Konsole" : `${user.name}${user.room ? ` · ${user.room}` : ""}`}
             </p>
-          </div>
-          <div className="flex gap-3">
-            {isAdmin && (
-              <button onClick={() => router.push("/gym-admin-control")} className="px-5 py-2.5 border border-[#deff9a]/30 bg-[#deff9a]/5 rounded-full text-[10px] font-black text-[#deff9a] active:scale-95 transition-all uppercase tracking-widest">Verwaltung</button>
+            {!isAdmin && (
+              <div className="mt-2">
+                <StatusBadges profile={user} date={win.today} />
+              </div>
             )}
-            <button onClick={async () => { await auth.signOut(); router.replace("/"); }} className="px-5 py-2.5 border border-zinc-800 rounded-full text-[10px] font-black text-zinc-400 active:text-white uppercase transition-all">Logout</button>
+          </div>
+          <div className="flex gap-2 sm:gap-3 shrink-0 pt-1">
+            {isAdmin && (
+              <button onClick={() => router.push("/gym-admin-control")} className="px-3.5 sm:px-5 py-2.5 border border-[#deff9a]/30 bg-[#deff9a]/5 rounded-full text-[10px] font-black text-[#deff9a] active:scale-95 transition-all uppercase tracking-wider sm:tracking-widest">Verwaltung</button>
+            )}
+            <button onClick={async () => { await auth.signOut(); router.replace("/"); }} className="px-3.5 sm:px-5 py-2.5 border border-zinc-800 rounded-full text-[10px] font-black text-zinc-400 active:text-white uppercase transition-all">Logout</button>
           </div>
         </header>
 
@@ -206,7 +214,7 @@ export default function Dashboard() {
         )}
 
         {/* Status Card */}
-        <div className={`mb-10 p-10 rounded-[3rem] border transition-all duration-700 text-center relative overflow-hidden shadow-2xl ${
+        <div className={`mb-8 sm:mb-10 p-8 sm:p-10 rounded-[2.5rem] sm:rounded-[3rem] border transition-all duration-700 text-center relative overflow-hidden shadow-2xl ${
           isSystemLocked ? "bg-red-950/20 border-red-900/50" : "bg-zinc-900 border-zinc-800"
         }`}>
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -226,26 +234,31 @@ export default function Dashboard() {
 
         {/* Slots */}
         <div className={`space-y-4 transition-all duration-500 ${isSystemLocked ? "opacity-20 grayscale pointer-events-none" : "opacity-100"}`}>
-          {schedule.slots.map((slot) => {
+          {visibleSlots.length === 0 && (
+            <p className="text-center text-zinc-600 text-[10px] font-black uppercase tracking-[0.4em] py-10">Keine Slots verfügbar</p>
+          )}
+          {visibleSlots.map((slot) => {
             const slotBookings = bookings.filter((b) => slotIdOf(schedule, b) === slot.id);
             const count = isAdmin ? slotBookings.length : counts[slot.id] ?? 0;
             const isMySlot = !isAdmin && !!myBooking && slotIdOf(schedule, myBooking) === slot.id;
             const isAnimatingBook = animatingSlot?.slot === slot.id && animatingSlot.type === 'book';
             const isAnimatingCancel = animatingSlot?.slot === slot.id && animatingSlot.type === 'cancel';
             const isStarted = hasSlotStarted(win, date, slot);
-            const isRestricted = !isAdmin && !isOldEnough(user, slot, date);
             const isFull = count >= slot.capacity;
 
             return (
               <div key={slot.id} className={`flex flex-col p-5 sm:p-6 rounded-[2.5rem] border transition-all duration-500 ${
                 isMySlot ? "border-[#deff9a]/50 bg-[#deff9a]/5 shadow-xl" : "border-zinc-800/50 bg-zinc-900/40"
-              } ${isAnimatingBook ? "shine-effect" : ""} ${isAnimatingCancel ? "shine-reverse-effect" : ""} ${(isRestricted || (isStarted && !isMySlot && !isAdmin)) ? "opacity-40" : ""}`}>
+              } ${isAnimatingBook ? "shine-effect" : ""} ${isAnimatingCancel ? "shine-reverse-effect" : ""} ${isStarted && !isMySlot && !isAdmin ? "opacity-40" : ""}`}>
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                       <span className="text-2xl sm:text-3xl font-black italic tracking-tighter block">{slot.label}</span>
                       {slot.minAge && (
                         <span className="px-2.5 py-1 rounded-full border border-zinc-700 text-zinc-500 text-[9px] font-black uppercase tracking-widest">{slot.minAge}+</span>
+                      )}
+                      {slot.requiresApproval && (
+                        <span className="px-2.5 py-1 rounded-full border border-[#deff9a]/30 text-[#deff9a] text-[9px] font-black uppercase tracking-widest">Bestätigung</span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-2">
@@ -254,22 +267,22 @@ export default function Dashboard() {
                           <div key={i} className={`w-3 h-3 rounded-full transition-colors duration-500 ${i < count ? (isMySlot ? "bg-[#deff9a]" : "bg-white") : "bg-zinc-800"}`} />
                         ))}
                       </div>
-                      <span className="text-[20px] uppercase text-zinc-500 font-black tracking-widest">{count}/{slot.capacity}</span>
+                      <span className="text-lg sm:text-[20px] uppercase text-zinc-500 font-black tracking-widest shrink-0">{count}/{slot.capacity}</span>
                     </div>
                   </div>
                   {!isAdmin && (
                     isMySlot ? (
                       isStarted ? (
-                        <span className="px-6 py-4 bg-[#deff9a]/10 text-[#deff9a] border border-[#deff9a]/20 rounded-2xl font-black text-[10px] uppercase tracking-widest">Dein Slot</span>
+                        <span className="shrink-0 px-5 sm:px-6 py-4 bg-[#deff9a]/10 text-[#deff9a] border border-[#deff9a]/20 rounded-2xl font-black text-[10px] uppercase tracking-widest">Dein Slot</span>
                       ) : (
-                        <button onClick={() => setShowConfirm(true)} disabled={busy} className="px-6 py-4 bg-red-500/10 text-red-500 border border-red-500/20 rounded-2xl font-black text-[10px] uppercase active:scale-95 outline-none transition-all">Storno</button>
+                        <button onClick={() => setShowConfirm(true)} disabled={busy} className="shrink-0 px-5 sm:px-6 py-4 bg-red-500/10 text-red-500 border border-red-500/20 rounded-2xl font-black text-[10px] uppercase active:scale-95 outline-none transition-all">Storno</button>
                       )
                     ) : (
-                      <button disabled={isFull || !!myBooking || isSystemLocked || isRestricted || isStarted || busy}
+                      <button disabled={isFull || !!myBooking || isSystemLocked || isStarted || busy}
                         onClick={() => handleBooking(slot)}
-                        className={`px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all outline-none ${
-                          isFull || !!myBooking || isRestricted || isStarted ? "bg-zinc-800 text-zinc-600" : "bg-[#deff9a] text-black active:scale-90 shadow-lg"
-                        }`}>{isRestricted ? `U${slot.minAge}` : isStarted ? "Vorbei" : isFull ? "FULL" : "Buchen"}</button>
+                        className={`shrink-0 px-6 sm:px-8 py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all outline-none ${
+                          isFull || !!myBooking || isStarted ? "bg-zinc-800 text-zinc-600" : "bg-[#deff9a] text-black active:scale-90 shadow-lg"
+                        }`}>{isStarted ? "Vorbei" : isFull ? "FULL" : "Buchen"}</button>
                     )
                   )}
                 </div>

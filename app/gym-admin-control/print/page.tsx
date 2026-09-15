@@ -49,7 +49,7 @@ export default function PrintCredentials() {
           <button onClick={() => router.push("/gym-admin-control")} className="text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-[0.3em] transition-colors flex items-center gap-2">
             <span className="text-lg">←</span> Control
           </button>
-          <span className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em]">{students?.length ?? 0} Zettel</span>
+          <span className="hidden sm:inline text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em]">{students?.length ?? 0} Zettel</span>
           <button onClick={() => window.print()} disabled={!students?.length} className="px-6 py-3 bg-[#deff9a] text-black rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] active:scale-95 transition-all disabled:opacity-50">
             Drucken
           </button>
@@ -57,7 +57,7 @@ export default function PrintCredentials() {
         {error && <p className="text-red-500 text-[10px] font-black uppercase text-center tracking-widest mt-3">{error}</p>}
       </div>
 
-      <div className="sheet max-w-[210mm] mx-auto bg-white my-6 p-[10mm] grid grid-cols-2">
+      <div className="sheet max-w-[210mm] m-3 sm:mx-auto sm:my-6 bg-white p-3 sm:p-[10mm] grid grid-cols-1 sm:grid-cols-2">
         {students?.map((s) => (
           <div key={s.uid} className="slip border border-dashed border-zinc-400 p-5 flex flex-col justify-between">
             <div className="flex items-start justify-between gap-3">
@@ -89,12 +89,13 @@ export default function PrintCredentials() {
       </div>
 
       <style jsx global>{`
-        .slip { height: 55mm; break-inside: avoid; }
+        .slip { min-height: 55mm; break-inside: avoid; }
         @media print {
           @page { size: A4; margin: 0; }
           html, body, .print-root { background: white !important; }
           .no-print { display: none !important; }
-          .sheet { margin: 0 !important; max-width: none !important; }
+          .sheet { margin: 0 !important; max-width: none !important; padding: 10mm !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+          .slip { height: 55mm; min-height: 0; }
         }
       `}</style>
     </div>

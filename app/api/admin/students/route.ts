@@ -1,6 +1,6 @@
 import { adminDb } from "@/lib/firebaseAdmin";
 import { HttpError, readJson, requireAdmin, withErrors } from "@/lib/serverAuth";
-import { createStudent, validateStudent, type StudentInput } from "@/lib/students";
+import { createStudent, deleteStudents, validateStudent, type StudentInput } from "@/lib/students";
 import { isAdminProfile, type StudentRecord, type UserProfile } from "@/lib/types";
 
 // Alle Studenten inkl. aktueller Passwörter (für Liste & Ausdruck)
@@ -57,4 +57,15 @@ export const POST = withErrors(async (req) => {
     }
   }
   return Response.json({ created, failed });
+});
+
+// Mehrere Studenten auf einmal löschen (z.B. zum neuen Schuljahr)
+export const DELETE = withErrors(async (req) => {
+  await requireAdmin(req);
+  const { uids } = await readJson<{ uids?: unknown }>(req);
+  const valid = Array.isArray(uids) && uids.every((u) => typeof u === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(u));
+  if (!valid || uids.length === 0) throw new HttpError(400, "Keine Studenten ausgewählt");
+  if (uids.length > 1000) throw new HttpError(400, "Maximal 1000 auf einmal");
+
+  return Response.json(await deleteStudents(uids as string[]));
 });

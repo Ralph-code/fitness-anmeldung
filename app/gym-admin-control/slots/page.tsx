@@ -6,26 +6,30 @@ import { useAuth } from "@/context/AuthContext";
 import { apiFetch } from "@/lib/api";
 import { useSchedule } from "@/lib/useSchedule";
 import {
-  DEFAULT_SCHEDULE, MAX_SLOTS, MAX_SLOT_CAPACITY, fromMinutes, toMinutes, validateSchedule,
+  ADULT_AGE, DEFAULT_SCHEDULE, MAX_SLOTS, MAX_SLOT_CAPACITY, fromMinutes, toMinutes, validateSchedule,
   type Schedule, type SlotConfig,
 } from "@/lib/schedule";
 import ConfirmModal from "@/components/ConfirmModal";
 
 type Draft = { opensAt: string; slots: SlotConfig[] };
 
-const AGE_OPTIONS: (number | null)[] = [null, 14, 16, 18];
-
 const toDraft = (s: Schedule): Draft => ({
   opensAt: s.opensAt,
-  slots: s.slots.map(({ id, start, end, capacity, minAge }) => ({ id, start, end, capacity, minAge })),
+  slots: s.slots.map(({ id, start, end, capacity, minAge, requiresApproval }) => ({
+    id, start, end, capacity, minAge, requiresApproval,
+  })),
 });
 
 const newSlotId = () => `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 
-const cardClass = "bg-zinc-900 border border-zinc-800 rounded-[3rem] p-8 sm:p-10 shadow-2xl relative overflow-hidden";
+const cardClass = "bg-zinc-900 border border-zinc-800 rounded-[2.5rem] sm:rounded-[3rem] p-6 sm:p-10 shadow-2xl relative overflow-hidden";
 const labelClass = "text-zinc-500 text-[9px] font-black uppercase tracking-[0.4em] block mb-4";
-const timeClass = "w-full min-w-0 bg-black border border-zinc-800 rounded-2xl p-3 sm:p-4 text-xl sm:text-2xl font-black italic tracking-tighter text-white outline-none focus:border-[#deff9a] transition-all [color-scheme:dark]";
+const timeClass = "w-full min-w-0 bg-black border border-zinc-800 rounded-2xl px-2 py-3 sm:p-4 text-lg sm:text-2xl text-center font-black italic tracking-tighter text-white outline-none focus:border-[#deff9a] transition-all [color-scheme:dark]";
 const stepClass = "w-10 h-10 flex items-center justify-center rounded-xl bg-black border border-zinc-800 text-[#deff9a] font-black text-xl active:scale-90 transition-all disabled:text-zinc-800";
+const toggleClass = (on: boolean) =>
+  `px-3 sm:px-4 py-2.5 rounded-full border text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all ${
+    on ? "border-[#deff9a]/50 bg-[#deff9a]/10 text-[#deff9a]" : "border-zinc-800 text-zinc-500"
+  }`;
 
 export default function SlotsAdmin() {
   const { user, loading } = useAuth();
@@ -73,7 +77,9 @@ export default function SlotsAdmin() {
     const last = [...current.slots].sort((a, b) => toMinutes(b.end) - toMinutes(a.end))[0];
     const start = fromMinutes(Math.min(last ? toMinutes(last.end) : 6 * 60, 22 * 60 + 58));
     const end = fromMinutes(Math.min(toMinutes(start) + 60, 23 * 60 + 59));
-    update({ slots: [...current.slots, { id: newSlotId(), start, end, capacity: last?.capacity ?? 6, minAge: null }] });
+    update({
+      slots: [...current.slots, { id: newSlotId(), start, end, capacity: last?.capacity ?? 6, minAge: null, requiresApproval: false }],
+    });
   };
 
   const save = async () => {
@@ -97,29 +103,29 @@ export default function SlotsAdmin() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 pb-44 font-sans selection:bg-[#deff9a] selection:text-black">
-      <div className="max-w-2xl mx-auto pt-10">
+    <div className="min-h-screen bg-black text-white p-4 sm:p-6 pb-44 font-sans selection:bg-[#deff9a] selection:text-black">
+      <div className="max-w-2xl mx-auto pt-6 sm:pt-10">
 
         {/* Back Navigation */}
         <button
           onClick={() => router.push("/gym-admin-control")}
-          className="mb-10 text-zinc-600 hover:text-white text-[10px] font-black uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
+          className="mb-8 sm:mb-10 text-zinc-600 hover:text-white text-[10px] font-black uppercase tracking-[0.3em] transition-colors flex items-center gap-2"
         >
           <span className="text-lg">←</span> Control
         </button>
 
         <h1 className="text-4xl font-black italic text-[#deff9a] uppercase tracking-tighter mb-2">Slots</h1>
-        <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.4em] mb-12">Zeitplan & Plätze</p>
+        <p className="text-zinc-500 text-[10px] font-black uppercase tracking-[0.4em] mb-10 sm:mb-12">Zeitplan & Plätze</p>
 
         {/* Buchungsfenster */}
         <div className={`${cardClass} mb-6`}>
           <div className="relative z-10">
-            <label className={labelClass}>Buchung für morgen ab</label>
+            <span className={labelClass}>Buchung für morgen ab</span>
             <input
               type="time"
               value={current.opensAt}
               onChange={(e) => update({ opensAt: e.target.value })}
-              className="w-full bg-black border border-zinc-800 rounded-2xl p-5 text-3xl font-black text-[#deff9a] outline-none focus:border-[#deff9a]/50 transition-all shadow-inner [color-scheme:dark]"
+              className="w-full min-h-[4.5rem] bg-black border border-zinc-800 rounded-2xl p-4 sm:p-5 text-3xl font-black text-[#deff9a] outline-none focus:border-[#deff9a]/50 transition-all shadow-inner [color-scheme:dark]"
             />
             <p className="text-[9px] text-zinc-600 mt-3 leading-relaxed uppercase font-bold italic">
               Buchungsschluss für heute ist der Start des letzten Slots{lastStart && ` (${lastStart})`}. Dazwischen ist Pause.
@@ -128,24 +134,29 @@ export default function SlotsAdmin() {
           <div className="absolute -right-16 -bottom-16 w-64 h-64 bg-[#deff9a]/5 blur-[90px] rounded-full pointer-events-none"></div>
         </div>
 
+        <p className="text-[9px] text-zinc-600 mb-4 px-2 leading-relaxed uppercase font-bold italic">
+          {ADULT_AGE}+: nur Studenten ab {ADULT_AGE} sehen den Slot · Mit Bestätigung: nur bestätigte Studenten sehen den Slot
+        </p>
+
         {/* Slot-Liste */}
         <div className="space-y-4">
           {current.slots.map((slot) => (
-            <div key={slot.id} className="p-5 sm:p-6 rounded-[2.5rem] border border-zinc-800/50 bg-zinc-900/40">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <input type="time" className={timeClass} value={slot.start} onChange={(e) => updateSlot(slot.id, { start: e.target.value })} />
+            <div key={slot.id} className="p-4 sm:p-6 rounded-[2rem] sm:rounded-[2.5rem] border border-zinc-800/50 bg-zinc-900/40">
+              <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto] items-center gap-2 sm:gap-3">
+                <input type="time" aria-label="Start" className={timeClass} value={slot.start} onChange={(e) => updateSlot(slot.id, { start: e.target.value })} />
                 <span className="text-zinc-600 font-black">–</span>
-                <input type="time" className={timeClass} value={slot.end} onChange={(e) => updateSlot(slot.id, { end: e.target.value })} />
+                <input type="time" aria-label="Ende" className={timeClass} value={slot.end} onChange={(e) => updateSlot(slot.id, { end: e.target.value })} />
                 <button
                   onClick={() => removeSlot(slot.id)}
                   disabled={current.slots.length <= 1}
-                  className="w-12 h-12 shrink-0 flex items-center justify-center bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl font-black active:scale-90 transition-all disabled:opacity-30"
+                  aria-label="Slot löschen"
+                  className="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center bg-red-500/10 border border-red-500/20 text-red-500 rounded-xl font-black active:scale-90 transition-all disabled:opacity-30"
                 >
                   ✕
                 </button>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-4 mt-5">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 mt-4 sm:mt-5">
                 <div className="flex items-center gap-3">
                   <button onClick={() => updateSlot(slot.id, { capacity: slot.capacity - 1 })} disabled={slot.capacity <= 1} className={stepClass}>−</button>
                   <div className="text-center min-w-[3.5rem]">
@@ -155,18 +166,13 @@ export default function SlotsAdmin() {
                   <button onClick={() => updateSlot(slot.id, { capacity: slot.capacity + 1 })} disabled={slot.capacity >= MAX_SLOT_CAPACITY} className={stepClass}>+</button>
                 </div>
 
-                <div className="flex gap-1.5">
-                  {AGE_OPTIONS.map((age) => (
-                    <button
-                      key={age ?? "all"}
-                      onClick={() => updateSlot(slot.id, { minAge: age })}
-                      className={`px-3 py-2 rounded-full border text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all ${
-                        slot.minAge === age ? "border-[#deff9a]/50 bg-[#deff9a]/10 text-[#deff9a]" : "border-zinc-800 text-zinc-500"
-                      }`}
-                    >
-                      {age ? `${age}+` : "Alle"}
-                    </button>
-                  ))}
+                <div className="flex gap-2">
+                  <button onClick={() => updateSlot(slot.id, { minAge: slot.minAge ? null : ADULT_AGE })} className={toggleClass(!!slot.minAge)}>
+                    {ADULT_AGE}+
+                  </button>
+                  <button onClick={() => updateSlot(slot.id, { requiresApproval: !slot.requiresApproval })} className={toggleClass(slot.requiresApproval)}>
+                    Mit Bestätigung
+                  </button>
                 </div>
               </div>
 
@@ -182,7 +188,7 @@ export default function SlotsAdmin() {
         <button
           onClick={addSlot}
           disabled={current.slots.length >= MAX_SLOTS}
-          className="w-full mt-4 py-6 border border-dashed border-zinc-800 rounded-[2.5rem] text-[10px] font-black uppercase tracking-[0.3em] text-[#deff9a] active:scale-95 transition-all disabled:opacity-30"
+          className="w-full mt-4 py-6 border border-dashed border-zinc-800 rounded-[2rem] sm:rounded-[2.5rem] text-[10px] font-black uppercase tracking-[0.3em] text-[#deff9a] active:scale-95 transition-all disabled:opacity-30"
         >
           + Slot hinzufügen
         </button>

@@ -21,7 +21,9 @@ export const PUT = withErrors(async (req) => {
 
   await scheduleRef().set({
     opensAt: schedule.opensAt,
-    slots: schedule.slots.map(({ id, start, end, capacity, minAge }) => ({ id, start, end, capacity, minAge })),
+    slots: schedule.slots.map(({ id, start, end, capacity, minAge, requiresApproval }) => ({
+      id, start, end, capacity, minAge, requiresApproval,
+    })),
     updatedAt: FieldValue.serverTimestamp(),
   });
 

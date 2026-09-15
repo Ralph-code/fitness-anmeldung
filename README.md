@@ -4,7 +4,10 @@ Buchungssystem für den Fitnessraum im Heim (Next.js 16 + Firebase).
 
 ## Regeln
 
-Standard-Zeitplan – der Admin ändert ihn unter **Verwaltung → Slots bearbeiten** (Uhrzeiten, Plätze, Altersgrenze, Slots hinzufügen/löschen, Buchungsstart):
+Standard-Zeitplan – der Admin ändert ihn unter **Verwaltung → Slots bearbeiten** (Uhrzeiten, Plätze, Slots hinzufügen/löschen, Buchungsstart). Pro Slot gibt es zwei Optionen:
+
+- **16+** – nur Studenten ab 16 sehen und buchen den Slot
+- **Mit Bestätigung** – nur Studenten, die der Admin in der Studentenliste bestätigt hat, sehen und buchen den Slot
 
 | Regel | Standard |
 | --- | --- |
