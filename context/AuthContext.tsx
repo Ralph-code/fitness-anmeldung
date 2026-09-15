@@ -4,58 +4,74 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
+import { isAdminProfile, type UserProfile } from "@/lib/types";
 
-interface UserType {
+export interface AppUser extends UserProfile {
   uid: string;
   email: string | null;
-  username?: string;
-  isAdmin?: boolean;
-  birthYear?: number;
+  name: string;
+  isAdmin: boolean;
 }
 
 interface AuthContextType {
-  user: UserType | null;
+  user: AppUser | null;
   loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<UserType | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
-      if (firebaseUser) {
-        // Echtzeit-Listener für Profildaten
-        const userRef = doc(db, "users", firebaseUser.uid);
-        const unsubscribeDoc = onSnapshot(userRef, (docSnap) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            setUser({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email,
-              username: data.username || firebaseUser.email?.split("@")[0],
-              isAdmin: data.isAdmin === true || data.role === "admin",
-              birthYear: data.birthYear || 0, // 0 als Fallback, falls nichts eingetragen ist
-            });
-          } else {
-            setUser({ uid: firebaseUser.uid, email: firebaseUser.email, birthYear: 0 });
-          }
-          setLoading(false);
-        }, (error) => {
-          console.warn("AuthDoc-Sperre:", error.message);
-          setLoading(false);
-        });
+    let unsubscribeDoc: (() => void) | undefined;
 
-        return () => unsubscribeDoc();
-      } else {
+    const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      unsubscribeDoc?.();
+      unsubscribeDoc = undefined;
+
+      if (!firebaseUser) {
         setUser(null);
         setLoading(false);
+        return;
       }
+
+      // Bis das Profil da ist, nicht als "ausgeloggt" gelten (sonst Redirect zum Login)
+      setLoading(true);
+      // Echtzeit-Listener für Profildaten (Sperren wirken sofort)
+      unsubscribeDoc = onSnapshot(
+        doc(db, "users", firebaseUser.uid),
+        (docSnap) => {
+          if (!docSnap.exists()) {
+            // Konto wurde gelöscht
+            auth.signOut();
+            return;
+          }
+          const data = docSnap.data() as UserProfile;
+          const username = data.username || firebaseUser.email?.split("@")[0] || "";
+          setUser({
+            ...data,
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            username,
+            name: data.name || username,
+            isAdmin: isAdminProfile(data),
+          });
+          setLoading(false);
+        },
+        (error) => {
+          console.warn("AuthDoc-Sperre:", error.message);
+          setUser(null);
+          setLoading(false);
+        }
+      );
     });
 
-    return () => unsubscribeAuth();
+    return () => {
+      unsubscribeDoc?.();
+      unsubscribeAuth();
+    };
   }, []);
 
   return (

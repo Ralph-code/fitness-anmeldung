@@ -5,6 +5,7 @@ import { auth, db } from "@/lib/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { toUsername, usernameToEmail } from "@/lib/schedule";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -18,23 +19,34 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    // Umwandlung in die interne E-Mail-Adresse
-    const email = `${username.trim().toLowerCase()}@fitness.local`;
+    // "Max Müller" und "max.mueller" führen zum selben Konto; ältere Benutzernamen gehen weiterhin
+    const raw = username.trim().toLowerCase();
+    const candidates = [...new Set([toUsername(raw), raw])].filter(Boolean);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const userDoc = await getDoc(doc(db, "users", userCredential.user.uid));
+      let userCredential;
+      for (const [i, candidate] of candidates.entries()) {
+        try {
+          userCredential = await signInWithEmailAndPassword(auth, usernameToEmail(candidate), password);
+          break;
+        } catch (err) {
+          if (i === candidates.length - 1 || (err as { code?: string }).code !== "auth/invalid-credential") throw err;
+        }
+      }
+      const userDoc = await getDoc(doc(db, "users", userCredential!.user.uid));
 
       if (userDoc.exists()) {
         router.push("/dashboard");
       } else {
+        await auth.signOut();
         setError("Daten konnten nicht geladen werden.");
         setLoading(false);
       }
-    } catch (err: any) {
+    } catch (err) {
       setLoading(false);
       console.error(err);
-      if (err.code === "auth/invalid-credential" || err.code === "auth/user-not-found") {
+      const code = (err as { code?: string }).code;
+      if (code === "auth/invalid-credential" || code === "auth/user-not-found") {
         setError("Name oder Passwort falsch.");
       } else {
         setError("Login fehlgeschlagen.");
@@ -71,7 +83,7 @@ export default function LoginPage() {
           <div className="space-y-2">
             <input
               type="text"
-              placeholder="Username"
+              placeholder="Name"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               className="w-full p-5 bg-black border border-zinc-800 rounded-2xl outline-none focus:border-[#deff9a] text-white font-bold transition-all placeholder:text-zinc-700"
