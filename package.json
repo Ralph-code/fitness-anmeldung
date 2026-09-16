@@ -7,7 +7,8 @@
     "dev": "next dev",
     "start": "next start",
     "lint": "eslint",
-    "create-admin": "node --env-file=.env.local scripts/create-admin.mjs"
+    "create-admin": "node --env-file=.env.local scripts/create-admin.mjs",
+    "create-superadmin": "node --env-file=.env.local scripts/create-superadmin.mjs"
   },
   "dependencies": {
     "firebase": "^12.12.1",

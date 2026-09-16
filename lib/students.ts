@@ -8,9 +8,9 @@ import { isAdminProfile, type UserProfile } from "@/lib/types";
 // Ohne verwechselbare Zeichen (0/o, 1/l/i), damit man es vom Zettel abtippen kann
 const ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789";
 
-export function generatePassword() {
+export function generatePassword(groups = 2) {
   const pick = () => Array.from({ length: 4 }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
-  return `${pick()}-${pick()}`;
+  return Array.from({ length: groups }, pick).join("-");
 }
 
 /** Setzt ein neues Passwort, meldet alle offenen Sitzungen ab und speichert es für den Ausdruck */
@@ -42,7 +42,7 @@ export async function getStudent(uid: string) {
   return profile;
 }
 
-async function isUsernameFree(username: string) {
+export async function isUsernameFree(username: string) {
   try {
     await adminAuth().getUserByEmail(usernameToEmail(username));
     return false;

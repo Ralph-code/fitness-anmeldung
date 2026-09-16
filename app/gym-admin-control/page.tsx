@@ -300,6 +300,24 @@ export default function AdminControl() {
           </div>
         </div>
 
+        {/* Admins (nur Superadmin) */}
+        {user.isSuperAdmin && (
+          <div className={`${cardClass} mb-6`}>
+            <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+              <div>
+                <span className={`${labelClass} !mb-2`}>Admins</span>
+                <p className="text-[9px] text-zinc-600 leading-relaxed uppercase font-bold italic">Admins anlegen, Passwort neu, löschen</p>
+              </div>
+              <button
+                onClick={() => router.push("/gym-admin-control/admins")}
+                className="px-6 py-5 bg-black border border-[#deff9a]/30 text-[#deff9a] rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] active:scale-95 transition-all shrink-0"
+              >
+                Admins verwalten
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Zugangsdaten & neues Schuljahr */}
         <div className={`${cardClass} mb-6`}>
           <div className="relative z-10">

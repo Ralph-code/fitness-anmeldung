@@ -26,6 +26,7 @@ Der Browser darf in Firestore nur lesen (`firestore.rules`).
 
 - `app/page.tsx` – Login mit Name + Passwort (`Max Müller` → Benutzer `max.mueller`)
 - `app/dashboard` – Studenten buchen / stornieren; Admin sieht alle Buchungen (30 Tage zurück bis morgen), entfernt Buchungen und sperrt Studenten
+- `app/gym-admin-control/admins` – nur für den Superadmin: Admins anlegen, Passwort neu setzen, löschen
 - `app/gym-admin-control` – Studenten anlegen (einzeln oder als Liste), bearbeiten, sperren, löschen, Passwörter erneuern
 - `app/gym-admin-control/print` – Zugangszettel für die Rezeption (A4, 10 pro Seite)
 - `app/api/*` – alle Schreibzugriffe über das Firebase Admin SDK
@@ -37,10 +38,14 @@ Firestore-Collections: `settings/schedule` (Zeitplan), `users` (Profile), `booki
 1. `.env.example` nach `.env.local` kopieren und ausfüllen.
    Den Service-Account bekommst du in der Firebase Console → Projekteinstellungen → Dienstkonten → „Neuen privaten Schlüssel generieren“. Aus der JSON-Datei `client_email` → `FIREBASE_CLIENT_EMAIL` und `private_key` → `FIREBASE_PRIVATE_KEY`.
 2. Firestore-Regeln veröffentlichen: Inhalt von `firestore.rules` in der Firebase Console unter Firestore → Regeln einfügen (oder `npx firebase-tools deploy --only firestore:rules`).
-3. Admin-Konto anlegen bzw. Passwort setzen:
+3. Superadmin anlegen (volle Rechte, kann in der App Admins anlegen und löschen):
    ```bash
-   npm run create-admin -- admin EinSicheresPasswort
+   npm run create-superadmin -- ralph EinLangesSicheresPasswort
    ```
+   Weitere Admins legst du danach in der App an (Verwaltung → Admins verwalten).
+   Ein einfaches Admin-Konto geht auch im Terminal: `npm run create-admin -- admin EinSicheresPasswort`
+
+   **Rollen:** Superadmin = alles, inkl. Admins verwalten (nur im Terminal änderbar) · Admin = Studenten, Zeitplan, Buchungen · Student = buchen.
 4. Lokal starten: `npm run dev`
 
 ## Deployment auf Hostinger

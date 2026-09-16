@@ -4,13 +4,14 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { auth, db } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
-import { isAdminProfile, type UserProfile } from "@/lib/types";
+import { isAdminProfile, isSuperAdminProfile, type UserProfile } from "@/lib/types";
 
 export interface AppUser extends UserProfile {
   uid: string;
   email: string | null;
   name: string;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
 }
 
 interface AuthContextType {
@@ -57,6 +58,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             username,
             name: data.name || username,
             isAdmin: isAdminProfile(data),
+            isSuperAdmin: isSuperAdminProfile(data),
           });
           setLoading(false);
         },

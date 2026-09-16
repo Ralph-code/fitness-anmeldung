@@ -185,7 +185,7 @@ export default function Dashboard() {
           <div className="min-w-0">
             <h1 className="text-[1.75rem] sm:text-3xl font-black italic tracking-tighter text-[#deff9a] whitespace-nowrap">GYM LOG</h1>
             <p className="text-zinc-500 text-[10px] uppercase font-bold tracking-widest mt-1 truncate">
-                {isAdmin ? "Admin-Konsole" : `${user.name}${user.room ? ` · ${user.room}` : ""}`}
+                {isAdmin ? (user.isSuperAdmin ? "Superadmin-Konsole" : "Admin-Konsole") : `${user.name}${user.room ? ` · ${user.room}` : ""}`}
             </p>
             {!isAdmin && (
               <div className="mt-2">

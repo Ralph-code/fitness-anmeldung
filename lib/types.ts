@@ -2,6 +2,9 @@ export interface UserProfile {
   username: string;
   name?: string;
   room?: string;
+  createdAt?: string;
+  /** Superadmin: alle Admin-Rechte + Admins anlegen/löschen (nur im Terminal änderbar) */
+  isSuperAdmin?: boolean;
   birthDate?: string | null;
   birthYear?: number | null;
   isAdmin?: boolean;
@@ -29,5 +32,17 @@ export interface StudentRecord extends UserProfile {
   passwordIssuedAt: string | null;
 }
 
+export const isSuperAdminProfile = (p: Partial<UserProfile> | undefined) =>
+  p?.isSuperAdmin === true || p?.role === "superadmin";
+
 export const isAdminProfile = (p: Partial<UserProfile> | undefined) =>
-  p?.isAdmin === true || p?.role === "admin";
+  p?.isAdmin === true || p?.role === "admin" || isSuperAdminProfile(p);
+
+export interface AdminRecord {
+  uid: string;
+  username: string;
+  name: string;
+  isSuperAdmin: boolean;
+  createdAt: string | null;
+  lastSignIn: string | null;
+}

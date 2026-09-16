@@ -1,5 +1,5 @@
 import { adminAuth, adminDb } from "@/lib/firebaseAdmin";
-import { isAdminProfile, type UserProfile } from "@/lib/types";
+import { isAdminProfile, isSuperAdminProfile, type UserProfile } from "@/lib/types";
 
 export class HttpError extends Error {
   status: number;
@@ -9,7 +9,7 @@ export class HttpError extends Error {
   }
 }
 
-export type Caller = { uid: string; profile: UserProfile; isAdmin: boolean };
+export type Caller = { uid: string; profile: UserProfile; isAdmin: boolean; isSuperAdmin: boolean };
 
 export async function getCaller(req: Request): Promise<Caller> {
   const token = req.headers.get("authorization")?.match(/^Bearer (.+)$/)?.[1];
@@ -28,12 +28,18 @@ export async function getCaller(req: Request): Promise<Caller> {
   const snap = await adminDb().doc(`users/${uid}`).get();
   if (!snap.exists) throw new HttpError(403, "Kein Profil gefunden");
   const profile = snap.data() as UserProfile;
-  return { uid, profile, isAdmin: isAdminProfile(profile) };
+  return { uid, profile, isAdmin: isAdminProfile(profile), isSuperAdmin: isSuperAdminProfile(profile) };
 }
 
 export async function requireAdmin(req: Request) {
   const caller = await getCaller(req);
   if (!caller.isAdmin) throw new HttpError(403, "Nur für Admins");
+  return caller;
+}
+
+export async function requireSuperAdmin(req: Request) {
+  const caller = await getCaller(req);
+  if (!caller.isSuperAdmin) throw new HttpError(403, "Nur für Superadmins");
   return caller;
 }
 
