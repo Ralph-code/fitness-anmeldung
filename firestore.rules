@@ -1,7 +1,8 @@
 rules_version = '2';
 
-// Der Browser darf nur lesen. Alle Änderungen (Buchen, Stornieren, Studenten, Passwörter,
-// Sperren, Zeitplan) laufen über die Next.js API-Routen mit dem Admin SDK, das diese Regeln umgeht.
+// Der Browser darf nur lesen. Alle Änderungen (Buchen, Studenten, Passwörter, Sperren,
+// Zeitplan, Neuigkeiten, Essensplan, Vermerke) laufen über die Next.js API-Routen
+// mit dem Admin SDK, das diese Regeln umgeht.
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() {
@@ -10,7 +11,12 @@ service cloud.firestore {
 
     function isAdmin() {
       let profile = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-      return signedIn() && (profile.get('isAdmin', false) == true || profile.get('role', '') == 'admin');
+      return signedIn() && (
+        profile.get('isAdmin', false) == true ||
+        profile.get('isSuperAdmin', false) == true ||
+        profile.get('role', '') == 'admin' ||
+        profile.get('role', '') == 'superadmin'
+      );
     }
 
     match /users/{uid} {
@@ -21,6 +27,57 @@ service cloud.firestore {
     // Zeitplan (Slots, Plätze, Buchungsstart)
     match /settings/{docId} {
       allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // Kalender: Öffnungszeiten-Ausnahmen und schulfreie Tage
+    match /calendar/{date} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // Protokoll der Admin-Änderungen – nur für Admins sichtbar
+    match /adminLog/{id} {
+      allow read: if signedIn() && isAdmin();
+      allow write: if false;
+    }
+
+    // Neuigkeiten und Infos vom Heim
+    match /posts/{id} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // Essensplan pro Tag
+    match /meals/{date} {
+      allow read: if signedIn();
+      allow write: if false;
+    }
+
+    // Essens-Anwesenheit, Dokument-ID = "<datum>_<uid>"
+    match /mealAttendance/{id} {
+      allow get: if signedIn() && (id.matches('^[0-9-]+_' + request.auth.uid + '$') || isAdmin());
+      allow list: if signedIn() && isAdmin();
+      allow write: if false;
+    }
+
+    // Aufenthaltsort und Zimmerkontrolle
+    match /presence/{id} {
+      allow get: if signedIn() && (id.matches('^[0-9-]+_' + request.auth.uid + '$') || isAdmin());
+      allow list: if signedIn() && isAdmin();
+      allow write: if false;
+    }
+
+    // Studierzeiten der Studenten
+    match /studyBookings/{id} {
+      allow get: if signedIn() && (id.matches('^[0-9-]+_' + request.auth.uid + '$') || isAdmin());
+      allow list: if signedIn() && isAdmin();
+      allow write: if false;
+    }
+
+    // Vermerke: jeder sieht nur die eigenen, der Admin alle
+    match /notes/{id} {
+      allow read: if signedIn() && (resource.data.uid == request.auth.uid || isAdmin());
       allow write: if false;
     }
 

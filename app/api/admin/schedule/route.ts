@@ -1,4 +1,5 @@
 import { FieldValue } from "firebase-admin/firestore";
+import { logAdmin } from "@/lib/adminLog";
 import { deleteUpcomingBookings } from "@/lib/bookingsServer";
 import { loadSchedule, scheduleRef } from "@/lib/scheduleServer";
 import { HttpError, readJson, requireAdmin, withErrors } from "@/lib/serverAuth";
@@ -6,7 +7,7 @@ import { validateSchedule, type Schedule } from "@/lib/schedule";
 
 // Admin speichert den Zeitplan (Slots, Plätze, Altersgrenzen, Buchungsstart)
 export const PUT = withErrors(async (req) => {
-  await requireAdmin(req);
+  const caller = await requireAdmin(req);
   const body = await readJson<{ opensAt?: unknown; slots?: unknown }>(req);
 
   let schedule: Schedule;
@@ -29,5 +30,6 @@ export const PUT = withErrors(async (req) => {
 
   // Offene Buchungen in gelöschten Slots stornieren (Zeiten stammen noch aus dem alten Plan)
   const removed = removedIds.length ? await deleteUpcomingBookings({ slotIds: removedIds }, previous) : 0;
+  await logAdmin(caller, "schedule.update", { slots: schedule.slots.length, opensAt: schedule.opensAt, removedSlots: removedIds.length, cancelledBookings: removed });
   return Response.json({ ok: true, removed });
 });

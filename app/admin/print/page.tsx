@@ -21,7 +21,7 @@ export default function PrintCredentials() {
   const [host, setHost] = useState("");
 
   useEffect(() => {
-    if (!loading && (!user || !user.isAdmin)) router.replace("/dashboard");
+    if (!loading && (!user || !user.isAdmin)) router.replace("/start");
   }, [user, loading, router]);
 
   useEffect(() => {
@@ -46,7 +46,7 @@ export default function PrintCredentials() {
       {/* Toolbar (wird nicht gedruckt) */}
       <div className="no-print sticky top-0 z-10 bg-black border-b border-zinc-900 p-4">
         <div className="max-w-[210mm] mx-auto flex items-center justify-between gap-4">
-          <button onClick={() => router.push("/gym-admin-control")} className="text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-[0.3em] transition-colors flex items-center gap-2">
+          <button onClick={() => router.push("/admin")} className="text-zinc-500 hover:text-white text-[10px] font-black uppercase tracking-[0.3em] transition-colors flex items-center gap-2">
             <span className="text-lg">←</span> Control
           </button>
           <span className="hidden sm:inline text-zinc-500 text-[10px] font-black uppercase tracking-[0.3em]">{students?.length ?? 0} Zettel</span>

@@ -239,6 +239,6 @@ export function parseBirthDate(input: string): string | null {
   return date.toISOString().slice(0, 10);
 }
 
-export function formatDate(date: string, options: Intl.DateTimeFormatOptions) {
-  return new Date(`${date}T12:00:00Z`).toLocaleDateString("de-DE", { timeZone: "UTC", ...options });
+export function formatDate(date: string, options: Intl.DateTimeFormatOptions, locale = "de-DE") {
+  return new Date(`${date}T12:00:00Z`).toLocaleDateString(locale, { timeZone: "UTC", ...options });
 }

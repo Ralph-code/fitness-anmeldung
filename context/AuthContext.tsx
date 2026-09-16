@@ -6,6 +6,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { isAdminProfile, isSuperAdminProfile, type UserProfile } from "@/lib/types";
 
+/** Profil des eingeloggten Benutzers inkl. Rollen und persönlichen Einstellungen */
 export interface AppUser extends UserProfile {
   uid: string;
   email: string | null;

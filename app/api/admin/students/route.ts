@@ -1,4 +1,5 @@
 import { adminDb } from "@/lib/firebaseAdmin";
+import { logAdmin } from "@/lib/adminLog";
 import { HttpError, readJson, requireAdmin, withErrors } from "@/lib/serverAuth";
 import { createStudent, deleteStudents, validateStudent, type StudentInput } from "@/lib/students";
 import { isAdminProfile, type StudentRecord, type UserProfile } from "@/lib/types";
@@ -17,6 +18,7 @@ export const GET = withErrors(async (req) => {
       uid: d.id,
       password: creds.get(d.id)?.password ?? null,
       passwordIssuedAt: creds.get(d.id)?.issuedAt ?? null,
+      passwordChangedByUser: creds.get(d.id)?.changedByUser === true,
     }))
     .sort((a, b) =>
       (a.room ?? "").localeCompare(b.room ?? "", "de", { numeric: true }) ||
@@ -28,7 +30,7 @@ export const GET = withErrors(async (req) => {
 
 // Einen oder mehrere Studenten anlegen
 export const POST = withErrors(async (req) => {
-  await requireAdmin(req);
+  const caller = await requireAdmin(req);
   const { students = [] } = await readJson<{ students?: Partial<StudentInput>[] }>(req);
   if (students.length === 0) throw new HttpError(400, "Keine Studenten angegeben");
   if (students.length > 300) throw new HttpError(400, "Maximal 300 auf einmal");
@@ -56,16 +58,19 @@ export const POST = withErrors(async (req) => {
       failed.push({ name: input.name, error: (e as Error).message });
     }
   }
+  await logAdmin(caller, "student.create", { count: created.length, names: created.slice(0, 5).map((c) => c.name), failed: failed.length });
   return Response.json({ created, failed });
 });
 
 // Mehrere Studenten auf einmal löschen (z.B. zum neuen Schuljahr)
 export const DELETE = withErrors(async (req) => {
-  await requireAdmin(req);
+  const caller = await requireAdmin(req);
   const { uids } = await readJson<{ uids?: unknown }>(req);
   const valid = Array.isArray(uids) && uids.every((u) => typeof u === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(u));
   if (!valid || uids.length === 0) throw new HttpError(400, "Keine Studenten ausgewählt");
   if (uids.length > 1000) throw new HttpError(400, "Maximal 1000 auf einmal");
 
-  return Response.json(await deleteStudents(uids as string[]));
+  const result = await deleteStudents(uids as string[]);
+  await logAdmin(caller, "student.bulkDelete", result);
+  return Response.json(result);
 });

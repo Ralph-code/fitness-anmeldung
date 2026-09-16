@@ -1,14 +1,76 @@
 @import "tailwindcss";
 
+/* --- FARB-TOKENS ---
+   Dunkel ist der Standard. Die Akzentfarbe setzt der Admin (settings/theme),
+   Hell/Dunkel wählt jeder Benutzer selbst (Profil). */
+
+:root,
+[data-theme="dark"] {
+  --bg: #000000;
+  --surface: #18181b;
+  --surface-2: #27272a;
+  --surface-soft: rgba(24, 24, 27, 0.4);
+  --surface-strong: #09090b;
+  --inset: rgba(0, 0, 0, 0.4);
+  --overlay: rgba(0, 0, 0, 0.8);
+
+  --border: #27272a;
+  --border-soft: rgba(39, 39, 42, 0.7);
+  --border-strong: #3f3f46;
+
+  --text: #ffffff;
+  --text-muted: #a1a1aa;
+  --text-dim: #71717a;
+  --text-faint: #52525b;
+
+  --danger: #ef4444;
+  --danger-soft: rgba(69, 10, 10, 0.2);
+  --danger-border: rgba(127, 29, 29, 0.5);
+
+  --glow-opacity: 0.3;
+}
+
+[data-theme="light"] {
+  --bg: #f4f4f5;
+  --surface: #ffffff;
+  --surface-2: #e4e4e7;
+  --surface-soft: rgba(255, 255, 255, 0.85);
+  --surface-strong: #ffffff;
+  --inset: rgba(0, 0, 0, 0.04);
+  --overlay: rgba(244, 244, 245, 0.85);
+
+  --border: #e4e4e7;
+  --border-soft: rgba(228, 228, 231, 0.9);
+  --border-strong: #d4d4d8;
+
+  --text: #18181b;
+  --text-muted: #52525b;
+  --text-dim: #71717a;
+  --text-faint: #a1a1aa;
+
+  --danger: #dc2626;
+  --danger-soft: rgba(254, 226, 226, 0.7);
+  --danger-border: rgba(248, 113, 113, 0.5);
+
+  --glow-opacity: 0.18;
+}
+
+/* Akzent + abgeleitete Transparenzen (werden zur Laufzeit gesetzt) */
 :root {
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 0, 0, 0;
-  --background-end-rgb: 0, 0, 0;
+  --accent: #deff9a;
+  --accent-text: #deff9a;
+  --accent-contrast: #000000;
+  --accent-05: color-mix(in srgb, var(--accent) 5%, transparent);
+  --accent-10: color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-20: color-mix(in srgb, var(--accent) 20%, transparent);
+  --accent-30: color-mix(in srgb, var(--accent) 30%, transparent);
+  --accent-40: color-mix(in srgb, var(--accent) 40%, transparent);
+  --accent-50: color-mix(in srgb, var(--accent) 50%, transparent);
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
+  color: var(--text);
+  background: var(--bg);
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
 }
@@ -43,7 +105,6 @@ body {
 
 /* --- SHINE KLASSEN --- */
 
-/* Normaler Shine: Links -> Rechts */
 .shine-effect {
   position: relative;
   overflow: hidden;
@@ -52,12 +113,11 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  background: linear-gradient(90deg, transparent, var(--accent-30), transparent);
   transform: translateX(-150%) skewX(-20deg);
   animation: shine-forward 0.8s ease-out forwards;
 }
 
-/* Reverse Shine: Rechts -> Links */
 .shine-reverse-effect {
   position: relative;
   overflow: hidden;
@@ -66,7 +126,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(-90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  background: linear-gradient(-90deg, transparent, var(--accent-30), transparent);
   transform: translateX(150%) skewX(-20deg);
   animation: shine-reverse 0.8s ease-out forwards;
 }

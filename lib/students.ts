@@ -1,8 +1,9 @@
 import { randomInt } from "node:crypto";
 import { adminAuth, adminDb } from "@/lib/firebaseAdmin";
 import { deleteUpcomingBookings } from "@/lib/bookingsServer";
+import { NIGHT_KEY_MIN_AGE } from "@/lib/content";
 import { HttpError } from "@/lib/serverAuth";
-import { isValidRoom, normalizeRoom, parseBirthDate, toUsername, usernameToEmail } from "@/lib/schedule";
+import { ageOn, isValidRoom, normalizeRoom, parseBirthDate, toUsername, usernameToEmail, zonedNow } from "@/lib/schedule";
 import { isAdminProfile, type UserProfile } from "@/lib/types";
 
 // Ohne verwechselbare Zeichen (0/o, 1/l/i), damit man es vom Zettel abtippen kann
@@ -22,7 +23,17 @@ export async function issuePassword(uid: string) {
   return password;
 }
 
-export type StudentInput = { name: string; room: string; birthDate: string };
+export type StudentInput = {
+  name: string;
+  room: string;
+  birthDate: string;
+  school?: string;
+  schoolClass?: string;
+  smoker?: boolean;
+  dietary?: string;
+  nightKey?: boolean;
+  studyRequired?: boolean;
+};
 
 export function validateStudent(input: Partial<StudentInput>): StudentInput {
   const name = (input.name ?? "").trim().replace(/\s+/g, " ");
@@ -31,7 +42,22 @@ export function validateStudent(input: Partial<StudentInput>): StudentInput {
   if (toUsername(name).length < 2) throw new HttpError(400, "Name fehlt");
   if (!isValidRoom(room)) throw new HttpError(400, `Zimmer "${input.room ?? ""}" ungültig (z.B. 101 oder 101A)`);
   if (!birthDate) throw new HttpError(400, `Geburtsdatum für ${name} ungültig`);
-  return { name, room, birthDate };
+
+  const extras: Partial<StudentInput> = {};
+  if (input.school !== undefined) extras.school = String(input.school).trim().slice(0, 80);
+  if (input.schoolClass !== undefined) extras.schoolClass = String(input.schoolClass).trim().slice(0, 20).toUpperCase();
+  if (input.dietary !== undefined) extras.dietary = String(input.dietary).trim().slice(0, 300);
+  if (input.smoker !== undefined) extras.smoker = input.smoker === true;
+  if (input.studyRequired !== undefined) extras.studyRequired = input.studyRequired === true;
+  if (input.nightKey !== undefined) {
+    extras.nightKey = input.nightKey === true;
+    const age = ageOn({ birthDate }, zonedNow().date);
+    if (extras.nightKey && (age === null || age < NIGHT_KEY_MIN_AGE)) {
+      throw new HttpError(400, `Nachtschlüssel erst ab ${NIGHT_KEY_MIN_AGE} Jahren`);
+    }
+  }
+
+  return { name, room, birthDate, ...extras };
 }
 
 export async function getStudent(uid: string) {

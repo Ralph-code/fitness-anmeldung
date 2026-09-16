@@ -1,4 +1,5 @@
 import { createAdmin, listAdmins } from "@/lib/admins";
+import { logAdmin } from "@/lib/adminLog";
 import { readJson, requireSuperAdmin, withErrors } from "@/lib/serverAuth";
 
 // Nur der Superadmin darf Admins sehen und anlegen
@@ -8,7 +9,9 @@ export const GET = withErrors(async (req) => {
 });
 
 export const POST = withErrors(async (req) => {
-  await requireSuperAdmin(req);
+  const caller = await requireSuperAdmin(req);
   const { name } = await readJson<{ name?: string }>(req);
-  return Response.json(await createAdmin(name ?? ""));
+  const created = await createAdmin(name ?? "");
+  await logAdmin(caller, "admin.create", { uid: created.uid, username: created.username, name: created.name });
+  return Response.json(created);
 });
