@@ -1,48 +1,33 @@
-# St. Georg Schülerheim – App
+# St. Georg Schülerheim – Fitness-App
 
-Heim-App: Infos, Essensplan, An- und Abmeldungen, Fitness, Studierzeit und Anwesenheit.
-Next.js 16 + Firebase.
+Buchung des Fitnessraums für die Studenten des Heims. Next.js 16 + Firebase.
 
 ## Für Studenten
 
 | Bereich | Inhalt |
 | --- | --- |
-| **Start** | Neuigkeiten, Essensplan für heute, eigene Buchungen, Status des Heims |
 | **Fitness** | Trainingszeit buchen und stornieren |
-| **Essen** | Essenszeiten, Plan der nächsten Tage, Ab- und Anmeldung |
-| **Lernen** | Studierzeit für den Tag wählen |
-| **Profil** | Eigene Daten, Status heute, Erlaubnisse, Vermerke, Passwort, Ansicht (hell/dunkel), Sprache (DE/IT) |
-| **Kalender** | Öffnungszeiten, geschlossene und schulfreie Tage (über die Startseite) |
+| **Profil** | Eigene Daten, Erlaubnisse (16+, Bestätigung), Passwort, Ansicht (hell/dunkel), Sprache (DE/IT) |
 
-Beim ersten Öffnen erklärt ein kurzes Tutorial die App (im Profil erneut aufrufbar).
-Der Schülerbereich ist **deutsch und italienisch** (`lib/i18n.ts`); die Verwaltung ist nur deutsch.
+Beim ersten Öffnen jeder Seite erklärt eine kurze **Einführung mit Sprechblasen** die Knöpfe
+(Studenten: Fitness, Profil · Admins zusätzlich: Verwaltung, Studenten anlegen, Slots, Design).
+Im Profil lässt sie sich unter *Hilfe* erneut starten. Inhalte: `lib/tours.ts`.
+
+Die Studentenseiten gibt es **auf Deutsch und Italienisch** (`lib/i18n.ts`); die Verwaltung ist nur deutsch.
+Hell/Dunkel und Sprache wählt jeder selbst, die Akzentfarbe legt der Admin fest.
 
 ## Für Admins (Verwaltung)
 
-- **Studenten** – anlegen (einzeln oder als Liste), bearbeiten, bestätigen, sperren, Vermerke, Passwörter, löschen; dort auch **Studierzeit-Pflicht pro Student**
-- **Anwesenheit** – wer ist im Heim / Schule / Sport / zuhause / Ausgang / krank / entschuldigt, dazu die **Zimmerkontrolle am Abend** und eine Notiz pro Tag
-- **Essen** – Essensplan eintragen **und** Anwesenheit kontrollieren (wer isst mit, wer fehlt)
-- **Studierzeit** – Zeiten festlegen, Einträge pro Tag sehen, Anwesenheit abhaken, „ohne Eintrag“ im Blick
-- **Neuigkeiten** – Beiträge für die Startseite mit Kategorie und Anheften
-- **Kalender** – wöchentliche Öffnungszeiten und Ausnahmen **über einen Zeitraum** (geschlossen, andere Zeiten, schulfrei)
+- **Fitness** – alle Buchungen pro Tag, Studenten aus dem Slot entfernen oder sperren
+- **Studenten** – anlegen (einzeln oder als Liste), bearbeiten, bestätigen, sperren, Passwörter, löschen
 - **Fitness-Slots** – Zeiten, Plätze, 16+ und Mit Bestätigung
-- **Design** – Akzentfarbe für alle (Hell/Dunkel wählt jeder selbst)
+- **Design** – Akzentfarbe für alle
 - **Zugangsdaten** – Zettel für die Rezeption drucken
-- **Protokoll** – jede Admin-Änderung mit Zeit, Person und Details (Studenten-Aktionen werden nicht protokolliert)
 - **Admins** – nur Superadmin: Admins anlegen, Passwort neu, löschen
 
 ## Regeln
 
-**Essen:** Mittag 12:30–14:00, Abend 18:15–19:00. Ohne Abmeldung ist jeder angemeldet;
-Schüler können bis **20:00 am Vortag** ab- und wieder anmelden, danach nur das Personal.
-Wer als „gefehlt“ markiert wird, obwohl er angemeldet war, muss die Meldung in der App bestätigen.
-
-**Heim:** offen von Sonntag 19:00 bis Freitag 14:30 (Standard, vom Admin änderbar).
-
-**Studierzeit:** standardmäßig drei Einheiten pro Tag; jeder Student wählt eine, solange sie noch nicht begonnen hat.
-Die Pflicht gilt pro Student (`users.studyRequired`, Standard: Pflicht).
-
-**Fitness** – Standard, unter *Verwaltung → Fitness-Slots* änderbar:
+Standard, unter *Verwaltung → Fitness-Slots* änderbar:
 
 | Regel | Standard |
 | --- | --- |
@@ -53,22 +38,22 @@ Die Pflicht gilt pro Student (`users.studyRequired`, Standard: Pflicht).
 | Slot-Optionen | **16+** und **Mit Bestätigung** – solche Slots sehen nur berechtigte Studenten |
 | Zeitzone | Europe/Rome – unabhängig von Server- oder Handy-Zeit |
 | Zimmer | mit oder ohne Buchstabe, z.B. `101` oder `101A` |
-| Nachtschlüssel | erst ab 18 Jahren |
 
 Alle Regeln werden **auf dem Server** geprüft (`app/api/*`), der Browser darf in Firestore nur lesen.
 
 ## Aufbau
 
 - `app/page.tsx` – Login (immer dunkel) mit Kontaktdaten des Heims
-- `app/start`, `app/fitness`, `app/essen`, `app/studierzeit`, `app/profil`, `app/kalender` – Schülerbereich
-- `app/admin/*` – Verwaltung (Studenten, Heim-Anwesenheit, Studierzeit, News, Kalender, Slots, Design, Print, Protokoll, Admins)
+- `app/fitness`, `app/profil` – Studentenbereich
+- `app/admin/*` – Verwaltung (Studenten, Slots, Design, Print, Admins)
 - `app/api/*` – alle Schreibzugriffe über das Firebase Admin SDK
-- `components/AppShell.tsx` – Kopfzeile, Navigation unten (Studenten: Start · Fitness · Essen · Lernen · Profil · Admins: Start · Essen · Anwesenheit · Studierzeit · Verwaltung), Zugriffsschutz
+- `components/AppShell.tsx` – Kopfzeile, Navigation unten (Studenten: Fitness · Profil · Admins: Fitness · Verwaltung · Profil), Zugriffsschutz
+- `components/AdminPage.tsx` – Rahmen der Verwaltungsseiten, `components/Toast.tsx` – Rückmeldungen
+- `components/Tour.tsx` + `lib/tours.ts` – Einführung mit Sprechblasen (`data-tour`-Attribute markieren die Ziele)
 - `lib/i18n.ts` (Sprachen), `lib/theme.ts` + `app/globals.css` (Farben als CSS-Variablen)
 
-Firestore: `users`, `posts`, `meals/{datum}`, `mealAttendance/{datum}_{uid}`, `presence/{datum}_{uid}`,
-`studyBookings/{datum}_{uid}`, `bookings/{datum}_{uid}`, `days/{datum}`, `notes`, `calendar/{datum}`,
-`settings/{schedule|study|opening|theme}`, `adminLog`, `credentials` (nur serverseitig lesbar).
+Firestore: `users`, `bookings/{datum}_{uid}`, `days/{datum}`, `settings/{schedule|theme}`,
+`credentials` (nur serverseitig lesbar).
 
 ## Einrichtung
 
@@ -82,7 +67,7 @@ Firestore: `users`, `posts`, `meals/{datum}`, `mealAttendance/{datum}_{uid}`, `p
    ```
    Weitere Admins danach in der App (Verwaltung → Admins).
 
-   **Rollen:** Superadmin = alles, inkl. Admins verwalten (nur im Terminal änderbar) · Admin = Studenten, Inhalte, Kontrolle · Student = App nutzen.
+   **Rollen:** Superadmin = alles, inkl. Admins verwalten (nur im Terminal änderbar) · Admin = Studenten, Buchungen, Slots, Design · Student = App nutzen.
 4. Lokal starten: `npm run dev`
 
 ## Deployment auf Hostinger

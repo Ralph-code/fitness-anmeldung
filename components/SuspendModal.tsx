@@ -69,7 +69,7 @@ export default function SuspendModal({
         value={until}
         min={today}
         onChange={(e) => setUntil(e.target.value)}
-        className="w-full p-4 bg-[var(--bg)] border border-[var(--border)] rounded-2xl outline-none focus:border-red-500/50 text-red-500 font-black transition-all [color-scheme:dark] mb-3"
+        className="w-full p-4 bg-[var(--bg)] border border-[var(--border)] rounded-2xl outline-none focus:border-red-500/50 text-red-500 font-black transition-all mb-3"
       />
       <input
         type="text"
@@ -90,7 +90,7 @@ export default function SuspendModal({
         <button
           onClick={submit}
           disabled={busy || !until || until < today}
-          className="flex-1 py-4 bg-red-600 text-[var(--text)] rounded-2xl font-black uppercase text-[10px] active:scale-95 animate-soft-pulse shadow-[0_10px_20px_rgba(220,38,38,0.3)] disabled:opacity-50"
+          className="flex-1 py-4 bg-red-600 text-white rounded-2xl font-black uppercase text-[10px] active:scale-95 animate-soft-pulse shadow-[0_10px_20px_rgba(220,38,38,0.3)] disabled:opacity-50"
         >
           {busy ? "..." : "Sperren"}
         </button>

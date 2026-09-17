@@ -90,7 +90,7 @@ export default function ConfirmModal({
         <button
           onClick={onConfirm}
           disabled={busy || locked}
-          className="flex-1 py-4 bg-red-600 text-[var(--text)] rounded-2xl font-black uppercase text-[10px] active:scale-95 animate-soft-pulse shadow-[0_10px_20px_rgba(220,38,38,0.3)] disabled:opacity-50"
+          className="flex-1 py-4 bg-red-600 text-white rounded-2xl font-black uppercase text-[10px] active:scale-95 animate-soft-pulse shadow-[0_10px_20px_rgba(220,38,38,0.3)] disabled:opacity-50"
         >
           {busy ? "..." : confirmLabel}
         </button>

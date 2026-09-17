@@ -2,8 +2,8 @@
 // Alle Zeiten gelten in der Zeitzone des Heims, egal wo Server oder Handy stehen.
 // Slots, Plätze und Buchungsstart legt der Admin fest (Firestore: settings/schedule).
 
-export const TIME_ZONE = "Europe/Rome";
-export const LOGIN_EMAIL_DOMAIN = "fitness.local";
+const TIME_ZONE = "Europe/Rome";
+const LOGIN_EMAIL_DOMAIN = "fitness.local";
 export const MAX_SLOTS = 24;
 export const MAX_SLOT_CAPACITY = 50;
 export const ADULT_AGE = 16;
@@ -111,7 +111,7 @@ export function normalizeSchedule(data: unknown): Schedule {
   }
 }
 
-export const bookingClosesAt = (schedule: Schedule) => schedule.slots[schedule.slots.length - 1].start;
+const bookingClosesAt = (schedule: Schedule) => schedule.slots[schedule.slots.length - 1].start;
 
 export const slotById = (schedule: Schedule, id: string | undefined) => schedule.slots.find((s) => s.id === id);
 
@@ -167,10 +167,6 @@ export function getBookingWindow(schedule: Schedule, now = new Date()): BookingW
 
 export function hasSlotStarted(w: BookingWindow, date: string, s: Slot) {
   return date < w.today || (date === w.today && toMinutes(s.start) <= w.nowMinutes);
-}
-
-export function canBookSlot(w: BookingWindow, s: Slot) {
-  return w.phase !== "pause" && !hasSlotStarted(w, w.date, s);
 }
 
 type AgeFields = { birthDate?: string | null; birthYear?: number | null };

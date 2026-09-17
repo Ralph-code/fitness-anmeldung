@@ -7,8 +7,8 @@ import { SettingsProvider } from "@/context/SettingsContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "St. Georg Schülerheim",
-  description: "Infos, Essensplan, Anmeldungen und Fitness für das Heim",
+  title: "Fitness Heim System",
+  description: "Buchung des Fitnessraums im St. Georg Schülerheim",
 };
 
 // Gespeicherte Ansicht und Farbe setzen, bevor die Seite gezeichnet wird (kein Aufblitzen)
@@ -28,11 +28,7 @@ r.style.setProperty('--accent',a);r.style.setProperty('--accent-text',text);
 r.style.setProperty('--accent-contrast',lum>0.45?'#000000':'#ffffff');
 }catch(e){}})();`;
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="de" data-theme="dark" suppressHydrationWarning>
       <head>

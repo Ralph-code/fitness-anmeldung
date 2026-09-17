@@ -1,5 +1,4 @@
 import { adminDb } from "@/lib/firebaseAdmin";
-import { logAdmin } from "@/lib/adminLog";
 import { isValidAccent } from "@/lib/theme";
 import { HttpError, readJson, requireAdmin, withErrors } from "@/lib/serverAuth";
 
@@ -15,6 +14,5 @@ export const PUT = withErrors(async (req) => {
     updatedAt: new Date().toISOString(),
     updatedBy: caller.profile.name ?? caller.profile.username,
   });
-  await logAdmin(caller, "theme.update", { accent: value });
   return Response.json({ ok: true });
 });

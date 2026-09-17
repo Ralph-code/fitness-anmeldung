@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, where, onSnapshot, doc } from "firebase/firestore";
 import { useAuth } from "@/context/AuthContext";
@@ -15,6 +15,8 @@ import type { Booking } from "@/lib/types";
 import AppShell from "@/components/AppShell";
 import ConfirmModal from "@/components/ConfirmModal";
 import SuspendModal from "@/components/SuspendModal";
+import { Toast, useToast } from "@/components/Toast";
+import Tour from "@/components/Tour";
 import { Badge, CARD, EmptyState } from "@/components/ui";
 
 const ADMIN_HISTORY_DAYS = 30;
@@ -31,17 +33,12 @@ export default function FitnessPage() {
   const [dayCounts, setDayCounts] = useState<{ date: string; counts: Record<string, number> }>({ date: "", counts: {} });
   const [mine, setMine] = useState<{ date: string; booking: Booking | null }>({ date: "", booking: null });
   const [dayBookings, setDayBookings] = useState<{ date: string; items: Booking[] }>({ date: "", items: [] });
-  const [statusMsg, setStatusMsg] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const { toast, showToast } = useToast();
   const [showConfirm, setShowConfirm] = useState(false);
   const [animatingSlot, setAnimatingSlot] = useState<{ slot: string; type: "book" | "cancel" } | null>(null);
   const [adminConfirmData, setAdminConfirmData] = useState<Booking | null>(null);
   const [suspendTarget, setSuspendTarget] = useState<{ uid: string; name: string } | null>(null);
   const [busy, setBusy] = useState(false);
-
-  const showFeedback = useCallback((text: string, type: "success" | "error" = "success") => {
-    setStatusMsg({ text, type });
-    setTimeout(() => setStatusMsg(null), 3000);
-  }, []);
 
   // Zeit-Logik (Heim-Zeitzone): heute bis zum letzten Slot, Pause bis Buchungsstart, danach morgen
   useEffect(() => {
@@ -98,11 +95,11 @@ export default function FitnessPage() {
 
     try {
       await apiFetch("/api/bookings", { method: "POST", body: { slotId: slot.id } });
-      showFeedback(t("fitness.booked"));
+      showToast(t("fitness.booked"));
     } catch (e) {
       setMine(previous.mine);
       setDayCounts(previous.dayCounts);
-      showFeedback((e as Error).message, "error");
+      showToast((e as Error).message, "error");
     } finally {
       setBusy(false);
     }
@@ -127,19 +124,19 @@ export default function FitnessPage() {
 
     try {
       await apiFetch("/api/bookings", { method: "DELETE", body: { bookingId: booking.id } });
-      showFeedback(isAdmin ? "Entfernt" : t("fitness.cancelled"), "error");
+      showToast(isAdmin ? "Entfernt" : t("fitness.cancelled"), "error");
     } catch (e) {
       setMine(previous.mine);
       setDayCounts(previous.dayCounts);
       setDayBookings(previous.dayBookings);
-      showFeedback((e as Error).message, "error");
+      showToast((e as Error).message, "error");
     } finally {
       setBusy(false);
     }
   };
 
   if (!user || !win || !date || !scheduleReady) {
-    return <AppShell title={t("fitness.title")}><EmptyState>{t("app.loading")}</EmptyState></AppShell>;
+    return <AppShell title={t("fitness.hello", { name: user?.name ?? "" })}><EmptyState>{t("app.loading")}</EmptyState></AppShell>;
   }
 
   const bookings = dayBookings.date === date ? dayBookings.items : [];
@@ -170,10 +167,10 @@ export default function FitnessPage() {
   };
 
   return (
-    <AppShell title={t("fitness.title")} subtitle={isAdmin ? t("fitness.subtitleAdmin") : t("fitness.subtitleStudent")}>
+    <AppShell title={t("fitness.hello", { name: user.name })} subtitle={isAdmin ? t("fitness.subtitleAdmin") : t("fitness.subtitleStudent")}>
       {/* Datum-Navigation für Admins */}
       {isAdmin && (
-        <div className="flex items-center justify-between mb-5 bg-[var(--surface)] border border-[var(--border)] p-2 rounded-2xl">
+        <div data-tour="fitness-date" className="flex items-center justify-between mb-5 bg-[var(--surface)] border border-[var(--border)] p-2 rounded-2xl">
           <button onClick={() => shiftDate(-1)} disabled={date <= minAdminDate} className={`w-12 h-12 flex items-center justify-center text-xl font-black rounded-xl transition-all ${date <= minAdminDate ? "text-[var(--text-faint)]" : "text-[var(--accent-text)] active:bg-[var(--surface-2)]"}`}>←</button>
           <div className="text-center">
             <span className="text-[12px] font-black uppercase tracking-[0.2em] text-[var(--accent-text)] block mb-1">{formatDate(date, { weekday: "long" }, locale)}</span>
@@ -184,7 +181,7 @@ export default function FitnessPage() {
       )}
 
       {/* Status */}
-      <div className={`mb-8 p-8 rounded-[2.5rem] border text-center relative overflow-hidden ${isSystemLocked ? "bg-[var(--danger-soft)] border-[var(--danger-border)]" : "bg-[var(--surface)] border-[var(--border)]"}`}>
+      <div data-tour="fitness-status" className={`mb-8 p-8 rounded-[2.5rem] border text-center relative overflow-hidden ${isSystemLocked ? "bg-[var(--danger-soft)] border-[var(--danger-border)]" : "bg-[var(--surface)] border-[var(--border)]"}`}>
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className={`absolute -inset-[100%] opacity-30 animate-slow-spin ${isSystemLocked ? "bg-[radial-gradient(ellipse_at_center,#7f1d1d_0%,transparent_70%)]" : "bg-[radial-gradient(ellipse_at_center,var(--accent)_0%,transparent_70%)]"}`} style={{ filter: "blur(60px)", borderRadius: "40%" }}></div>
         </div>
@@ -205,7 +202,7 @@ export default function FitnessPage() {
         {visibleSlots.length === 0 && (
           <div className={CARD}><EmptyState>{t("fitness.noSlots")}</EmptyState></div>
         )}
-        {visibleSlots.map((slot) => {
+        {visibleSlots.map((slot, index) => {
           const slotBookings = bookings.filter((b) => slotIdOf(schedule, b) === slot.id);
           const count = isAdmin ? slotBookings.length : counts[slot.id] ?? 0;
           const isMySlot = !isAdmin && !!myBooking && slotIdOf(schedule, myBooking) === slot.id;
@@ -215,7 +212,7 @@ export default function FitnessPage() {
           const isFull = count >= slot.capacity;
 
           return (
-            <div key={slot.id} className={`flex flex-col p-5 rounded-3xl border transition-all duration-500 ${
+            <div key={slot.id} data-tour={index === 0 ? "fitness-slot" : undefined} className={`flex flex-col p-5 rounded-3xl border transition-all duration-500 ${
               isMySlot ? "border-[var(--accent-50)] bg-[var(--accent-05)]" : "border-[var(--border-soft)] bg-[var(--surface-soft)]"
             } ${isAnimatingBook ? "shine-effect" : ""} ${isAnimatingCancel ? "shine-reverse-effect" : ""} ${isStarted && !isMySlot && !isAdmin ? "opacity-40" : ""}`}>
               <div className="flex items-center justify-between gap-4">
@@ -228,7 +225,7 @@ export default function FitnessPage() {
                   <div className="flex items-center gap-3 mt-2.5">
                     <div className="flex flex-wrap gap-1.5">
                       {[...Array(slot.capacity)].map((_, i) => (
-                        <div key={i} className={`w-2.5 h-2.5 rounded-full transition-colors duration-500 ${i < count ? (isMySlot ? "bg-[var(--accent)]" : "bg-white") : "bg-[var(--surface-2)]"}`} />
+                        <div key={i} className={`w-2.5 h-2.5 rounded-full transition-colors duration-500 ${i < count ? (isMySlot ? "bg-[var(--accent)]" : "bg-[var(--text)]") : "bg-[var(--surface-2)]"}`} />
                       ))}
                     </div>
                     <span className="text-sm text-[var(--text-dim)] font-black tracking-wider shrink-0">{count}/{slot.capacity}</span>
@@ -299,18 +296,11 @@ export default function FitnessPage() {
       )}
 
       {suspendTarget && (
-        <SuspendModal student={suspendTarget} onClose={() => setSuspendTarget(null)} onDone={showFeedback} />
+        <SuspendModal student={suspendTarget} onClose={() => setSuspendTarget(null)} onDone={showToast} />
       )}
 
-      {statusMsg && (
-        <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-[700] w-full max-w-xs px-4 animate-in slide-in-from-bottom-5 fade-in">
-          <div className={`p-5 rounded-2xl border text-center font-black text-[10px] uppercase tracking-[0.3em] shadow-2xl ${
-            statusMsg.type === "success" ? "bg-[var(--bg)] border-[var(--accent)] text-[var(--accent-text)]" : "bg-[var(--bg)] border-red-500 text-red-500"
-          }`}>
-            {statusMsg.text}
-          </div>
-        </div>
-      )}
+      <Toast toast={toast} position="bottom-28" />
+      <Tour id={isAdmin ? "fitnessAdmin" : "fitness"} />
     </AppShell>
   );
 }

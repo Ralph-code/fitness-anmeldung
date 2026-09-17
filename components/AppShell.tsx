@@ -3,28 +3,20 @@
 import { useEffect, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BookOpen, Dumbbell, House, ShieldCheck, User, UserCheck, Utensils } from "lucide-react";
+import { Dumbbell, ShieldCheck, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useSettings } from "@/context/SettingsContext";
-import Tutorial from "@/components/Tutorial";
-import MissedMealNotice from "@/components/MissedMealNotice";
 import { Loading } from "@/components/ui";
 
 const STUDENT_NAV = [
-  { href: "/start", key: "nav.start", icon: House },
   { href: "/fitness", key: "nav.fitness", icon: Dumbbell },
-  { href: "/essen", key: "nav.meals", icon: Utensils },
-  { href: "/studierzeit", key: "nav.study", icon: BookOpen },
   { href: "/profil", key: "nav.profile", icon: User },
 ] as const;
 
-// Personal arbeitet mit den Kontrolllisten – Profil liegt oben im Kopf
 const ADMIN_NAV = [
-  { href: "/start", key: "nav.start", icon: House },
-  { href: "/essen", key: "nav.meals", icon: Utensils },
-  { href: "/admin/heim", key: "nav.presence", icon: UserCheck },
-  { href: "/admin/studierzeit", key: "nav.study", icon: BookOpen },
+  { href: "/fitness", key: "nav.fitness", icon: Dumbbell },
   { href: "/admin", key: "nav.admin", icon: ShieldCheck },
+  { href: "/profil", key: "nav.profile", icon: User },
 ] as const;
 
 /** Rahmen für alle eingeloggten Seiten: Kopfzeile, Navigation unten, Zugriffsschutz */
@@ -49,7 +41,7 @@ export default function AppShell({
   useEffect(() => {
     if (loading) return;
     if (!user) router.replace("/");
-    else if (adminOnly && !user.isAdmin) router.replace("/start");
+    else if (adminOnly && !user.isAdmin) router.replace("/fitness");
   }, [user, loading, adminOnly, router]);
 
   if (loading || !user || (adminOnly && !user.isAdmin)) return <Loading text={t("app.loading")} />;
@@ -66,15 +58,6 @@ export default function AppShell({
             {subtitle && <div className="text-[var(--text-dim)] text-xs mt-2 leading-relaxed">{subtitle}</div>}
           </div>
           <div className="flex items-center gap-2 shrink-0 pt-1">
-            {user.isAdmin && pathname !== "/profil" && (
-              <Link
-                href="/profil"
-                aria-label={t("nav.profile")}
-                className="w-11 h-11 flex items-center justify-center rounded-full border border-[var(--border)] text-[var(--text-muted)] active:text-[var(--text)] transition-all"
-              >
-                <User size={17} />
-              </Link>
-            )}
             {action}
           </div>
         </header>
@@ -84,12 +67,12 @@ export default function AppShell({
       <nav className="fixed bottom-0 inset-x-0 z-[400] bg-[var(--overlay)] backdrop-blur-xl border-t border-[var(--border)]">
         <div className="max-w-2xl mx-auto flex">
           {items.map(({ href, key, icon: Icon }) => {
-            // "/admin" nur exakt markieren, sonst leuchten alle Admin-Einträge gleichzeitig
-            const active = href === "/admin" ? pathname === "/admin" : pathname === href || pathname.startsWith(`${href}/`);
+            const active = pathname === href || pathname.startsWith(`${href}/`);
             return (
               <Link
                 key={href}
                 href={href}
+                data-tour={key.replace(".", "-")}
                 className={`flex-1 flex flex-col items-center gap-1.5 py-3.5 transition-colors ${active ? "text-[var(--accent-text)]" : "text-[var(--text-faint)] active:text-[var(--text-muted)]"}`}
               >
                 <Icon size={20} strokeWidth={active ? 2.6 : 2} />
@@ -100,8 +83,6 @@ export default function AppShell({
         </div>
       </nav>
 
-      <Tutorial />
-      <MissedMealNotice />
     </div>
   );
 }

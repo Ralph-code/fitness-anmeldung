@@ -7,13 +7,11 @@
     "dev": "next dev",
     "start": "next start",
     "lint": "eslint",
-    "create-admin": "node --env-file=.env.local scripts/create-admin.mjs",
     "create-superadmin": "node --env-file=.env.local scripts/create-superadmin.mjs"
   },
   "dependencies": {
     "firebase": "^12.12.1",
     "firebase-admin": "^14.4.0",
-    "framer-motion": "^12.38.0",
     "lucide-react": "^1.14.0",
     "next": "^16.3.5",
     "react": "19.2.4",

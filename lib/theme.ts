@@ -1,7 +1,6 @@
 // Akzentfarbe (vom Admin gesetzt) und Hell/Dunkel (pro Benutzer)
 
 export type ThemeMode = "dark" | "light";
-export const THEME_MODES: ThemeMode[] = ["dark", "light"];
 export const DEFAULT_ACCENT = "#deff9a";
 
 export const ACCENT_PRESETS = [

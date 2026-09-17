@@ -2,8 +2,7 @@ import type { ReactNode } from "react";
 
 // Gemeinsame Optik für die ganze App
 export const CARD = "rounded-3xl border border-[var(--border-soft)] bg-[var(--surface-soft)] p-5 sm:p-6";
-export const CARD_TIGHT = "rounded-2xl border border-[var(--border-soft)] bg-[var(--surface-soft)] p-4";
-export const INPUT = "w-full p-4 bg-[var(--bg)] border border-[var(--border)] rounded-2xl outline-none focus:border-[var(--accent)] text-[var(--text)] font-medium transition-all placeholder:text-[var(--text-faint)] [color-scheme:dark]";
+export const INPUT = "w-full p-4 bg-[var(--bg)] border border-[var(--border)] rounded-2xl outline-none focus:border-[var(--accent)] text-[var(--text)] font-medium transition-all placeholder:text-[var(--text-faint)]";
 export const LABEL = "text-[var(--text-dim)] text-[10px] font-black uppercase tracking-[0.3em] block mb-3";
 export const HINT = "text-[11px] text-[var(--text-dim)] leading-relaxed";
 
@@ -11,7 +10,6 @@ const BTN = "py-4 px-5 rounded-2xl font-black uppercase text-[11px] tracking-[0.
 export const BTN_PRIMARY = `${BTN} bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_10px_30px_var(--accent-20)]`;
 export const BTN_GHOST = `${BTN} bg-[var(--surface-2)] text-[var(--text)]`;
 export const BTN_OUTLINE = `${BTN} bg-[var(--bg)] border border-[var(--border)] text-[var(--text-muted)]`;
-export const BTN_DANGER = `${BTN} bg-red-500/10 text-red-500 border border-red-500/20`;
 export const PILL = "px-4 py-2.5 border rounded-full text-[9px] font-black uppercase tracking-widest active:scale-95 transition-all";
 
 const TONES = {
